@@ -1,0 +1,101 @@
+*Duffing* - Duffing Oscillator
+
+see also: WeaklyNonlinear(2), from SLUGens/sc3-plugins
+
+#x,y = Duffing(drv, freq, alpha, beta, gamma, delta, h, xi, yi, mul, add)
+
+ - *drv*: driving signal
+ - *freq*: iteration frequency in hertz
+ - *alpha*: linear damping
+ - *beta*: nonlinear damping
+ - *gamma*: input coupling
+ - *delta*: parameter
+ - *xi*: initial x value (x0)
+ - *yi*: initial y value (y0)
+ - *mul*: as usual
+ - *add*: s.a.
+
+implements a Duffing Oscillator, see
+http://en.wikipedia.org/wiki/Duffing_equation using Lance Putnam's
+Runge-Kutta version.
+
+#+BEGIN_EXAMPLE
+Duffing.equation
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+{Duffing.ar(drv: SinOsc.ar(100), freq: 22050, alpha: 0.6, beta: 0.1, gamma: 0.01, delta: 0.023, h: 0.05, xi: 0.1, yi: 0.1)}.play
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+// explore parameter space
+(
+{Out.ar(0, Pan2.ar(
+	1.0 * Duffing.ar(drv: SinOsc.ar(1.3e2), freq: s.sampleRate,
+		alpha: MouseX.kr(0, 5.0), beta: 0.1, gamma: MouseY.kr(0, 1.0), delta: 0.023,
+		h: 0.05, xi: 0.1, yi: 0.1, mul: 0.05)
+))}.play
+)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+(
+{Out.ar(0, Pan2.ar(
+	0.5*Duffing.ar(drv: SinOsc.ar(40), freq: s.sampleRate,
+		alpha: MouseX.kr(0.001, 5.0), beta: MouseX.kr(0.001, 5.0),
+		gamma: MouseY.kr(0, 1.0), delta: MouseY.kr(-1.0, -0.001, 1),
+		h: 0.05, xi: 0.1, yi: 0.1, mul: 0.05)
+))}.play
+)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+// ...
+(
+SynthDef(\duff, {|freq(22050), mfreq(1), alpha(0.1), beta(0.1), gamma(0.0), delta(0.025),
+	x0(0.1), y0(0.1), amp(0.1)|
+	//	SinOsc.ar(mfreq)
+	var duf = Duffing.ar(drv: Impulse.ar(mfreq), freq: freq,
+		alpha: alpha, beta: beta, gamma: gamma, delta: delta,
+		h: 0.05, xi: x0, yi: y0, mul: amp);
+	Out.ar(0, duf);
+}).store;
+)
+
+(
+x = Synth(\duff, [\freq, s.sampleRate/2, \amp, 0.6, \alpha, 2.6, \beta, 1500.5, \delta, 0.01,
+	\x0, 0.0, \y0, 1.0, \gamma, 0.0, \mfreq, 1
+]);
+)
+x.free;
+
+(
+x = Synth(\duftest, [\amp, 0.6, \alpha, 2.6, \beta, 156.5, \delta, 0.07,
+	\x0, 0.0, \y0, 1.0, \gamma, 0.0, \mfreq, 1
+]);
+)
+x.free;
+
+(// explore parameter space
+x = Synth(\duftest, [\amp, 0.2, \alpha, 2.6, \beta, 10, \delta, 0.03,
+	\x0, 0.0, \y0, 1.0, \gamma, 0.1, \mfreq, 1, \freq, s.sampleRate/2
+]);
+
+t = Task {
+	var dur = 3.0;
+	var pa, pb, pc, pd;
+	pb = Pseq([Pstutter(9, Pseq([10.0, 8.0, 5.0, 0.0], inf))], 1).asStream;
+	pc = Pseq([0.1, 0.15, 0.2], inf).asStream;
+	pd = Pseq([Pstutter(3, Pseq([0.03, 0.02, 0.035], inf))], 1).asStream;
+	inf.do {
+		x.set(\beta, pc.next.postln);
+		x.set(\gamma, pc.next.postln);
+		x.set(\delta, pd.next.postln);
+		dur.wait;
+	};
+};
+{t.start}.defer(1);
+)
+
+// and so forth ...
+#+END_EXAMPLE
